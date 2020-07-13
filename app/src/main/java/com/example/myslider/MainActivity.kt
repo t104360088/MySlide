@@ -2,7 +2,7 @@ package com.example.myslider
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
+import android.os.Handler
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.CompositePageTransformer
 import androidx.viewpager2.widget.MarginPageTransformer
@@ -11,16 +11,41 @@ import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
 
-    //第一項是 position 2
+    //滑頁資料
+    private val list = arrayListOf<SlideItem>()
+
+    //pager 的第一項是 position 2
     private var currentPosition = 2
+
+    //用於執行自動滑動
+    private val handler = Handler()
+
+    private val runnable = Runnable {
+        viewPager.currentItem = currentPosition + 1
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        initData()
+        setPagerStyle()
+        setPagerListener()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        handler.removeCallbacks(runnable)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        handler.postDelayed(runnable, 3000)
+    }
+
+    private fun initData() {
         //因為有 clipChildren，前後各加上兩項，這樣做無限循環比較順暢
         //如果沒有 clipChildren，前後各加上一項就好
-        val list = arrayListOf<SlideItem>()
         list.add(SlideItem(R.drawable.d))
         list.add(SlideItem(R.drawable.e))
 
@@ -35,7 +60,9 @@ class MainActivity : AppCompatActivity() {
 
         viewPager.adapter = SlideAdapter(list, viewPager)
         viewPager.currentItem = currentPosition
+    }
 
+    private fun setPagerStyle() {
         //使用 clip 裁切效果產生預覽左右的功能、加上放大縮小動畫
         viewPager.clipToPadding = false
         viewPager.clipChildren = false
@@ -50,7 +77,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         viewPager.setPageTransformer(transformer)
+    }
 
+    private fun setPagerListener() {
         //監聽頁面改變，並補正頁數，產生無限循環
         viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageScrollStateChanged(state: Int) {
@@ -77,6 +106,8 @@ class MainActivity : AppCompatActivity() {
 
             override fun onPageSelected(position: Int) {
                 currentPosition = position
+                handler.removeCallbacks(runnable)
+                handler.postDelayed(runnable, 3000)
             }
         })
     }
